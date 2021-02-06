@@ -35,9 +35,11 @@ class SHA1
 {
 public:
     SHA1();
+    SHA1(uint32_t* init_vector);
+    ~SHA1();
     void update(const std::string &s);
     void update(std::istream &is);
-    std::string final();
+    std::string final(uint64_t extra_bits);
     static std::string from_file(const std::string &filename);
 
 private:
@@ -59,6 +61,19 @@ inline static void reset(uint32_t digest[], std::string &buffer, uint64_t &trans
     digest[2] = 0x98badcfe;
     digest[3] = 0x10325476;
     digest[4] = 0xc3d2e1f0;
+
+    /* Reset counters */
+    buffer = "";
+    transforms = 0;
+}
+
+
+inline static void reset(uint32_t* init_vector, uint32_t digest[], std::string &buffer, uint64_t &transforms)
+{
+    /* Initialize with custom IV */
+    for (int i = 0; i <= 4; ++i) {
+        digest[i] = init_vector[i];
+    }
 
     /* Reset counters */
     buffer = "";
@@ -246,6 +261,12 @@ inline SHA1::SHA1()
     reset(digest, buffer, transforms);
 }
 
+inline SHA1::SHA1(uint32_t* init_vector)
+{
+    reset(init_vector, digest, buffer, transforms);
+}
+
+inline SHA1::~SHA1() {}
 
 inline void SHA1::update(const std::string &s)
 {
@@ -277,10 +298,11 @@ inline void SHA1::update(std::istream &is)
  * Add padding and return the message digest.
  */
 
-inline std::string SHA1::final()
+inline std::string SHA1::final(uint64_t extra_bits = 0)
 {
     /* Total number of hashed bits */
     uint64_t total_bits = (transforms*BLOCK_BYTES + buffer.size()) * 8;
+    total_bits += extra_bits;
 
     /* Padding */
     buffer += (char)0x80;

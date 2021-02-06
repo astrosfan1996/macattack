@@ -1,6 +1,7 @@
 CROSS =
 CXX   = $(CROSS)g++
 RM    = rm -f
+CPPFLAGS = -g
 
 all: demo_sha1 test_sha1
 
